@@ -1,15 +1,24 @@
+// src/CartPage.jsx
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 const cards = [
-  { id: "hi",     name: "Hi Card",     image: "/images/Gold.png",       price: 5, description: "Make a bold introduction at any event." },
-  { id: "hello",  name: "Hello Card",  image: "/images/Purple.png",     price: 6, description: "Say hello in style with seamless NFC sharing." },
-  { id: "honored",name: "Honored Card",image: "/images/OliveGreen.png", price: 7, description: "Show gratitude with a premium greeting." },
+  { id: "hi",      name: "Hi Card",     image: "/images/Gold.png",       price: 5, description: "Make a bold introduction at any event." },
+  { id: "hello",   name: "Hello Card",  image: "/images/Purple.png",     price: 6, description: "Say hello in style with seamless NFC sharing." },
+  { id: "honored", name: "Honored Card",image: "/images/OliveGreen.png", price: 7, description: "Show gratitude with a premium greeting." },
 ];
 
 export default function CardCarouselWithSummary() {
-  const [idx, setIdx]           = useState(0);
+  const location = useLocation();
+  // Pull the desired cardId out of state
+  const requestedId = location.state?.cardId;
+
+  // Find its index (or default to 0)
+  const defaultIdx = cards.findIndex(c => c.id === requestedId);
+  const [idx, setIdx] = useState(defaultIdx >= 0 ? defaultIdx : 0);
+
   const [quantity, setQuantity] = useState(1);
   const [promo, setPromo]       = useState("");
   const selected = cards[idx];
@@ -25,24 +34,23 @@ export default function CardCarouselWithSummary() {
   const tax        = (subtotal - discount) * taxRate;
   const total      = subtotal - discount + tax;
 
-  // Carousel logic
+  // Carousel slot logic (unchanged)
   const getPos = i => {
     const d = (i - idx + cards.length) % cards.length;
-    if (d === 0) return "center";
-    if (d === 1) return "right";
+    if (d === 0)                return "center";
+    if (d === 1)                return "right";
     if (d === cards.length - 1) return "left";
     return "hidden";
   };
   const slots = {
-    left:   { y: 40,  z: 100,  opacity: 0.2, scale: 1, zIndex: 1 },
-    center: { y: 0,   z:200,  opacity: 1,   scale: 1, zIndex: 2 },
-    right:  { y:-40,  z: 100,  opacity: 0.2, scale: 1, zIndex: 1 },
-    hidden: { opacity:0,     scale: 1, zIndex: 0 },
+    left:   { y: 40,  z:100, opacity:0.2, scale:1, zIndex:1 },
+    center: { y: 0,   z:200, opacity:1,   scale:1, zIndex:2 },
+    right:  { y:-40,  z:100, opacity:0.2, scale:1, zIndex:1 },
+    hidden: { opacity:0,    scale:1,        zIndex:0 },
   };
 
   return (
     <main className="min-h-screen bg-black text-white p-4 flex flex-col lg:flex-row items-start justify-center gap-8">
-
       {/* Carousel + Description */}
       <div className="flex-1 flex flex-col items-center w-full max-w-lg">
         <div
@@ -106,7 +114,7 @@ export default function CardCarouselWithSummary() {
       </div>
 
       {/* Order Summary */}
-      <aside className="w-full lg:w-1/4 bg-white/10 backdrop-blur-lg p-4 rounded-xl shadow-lg sticky top-20" style={{ maxHeight:'400px' }}>
+      <aside className="w-full lg:w-1/4 bg-white/10 backdrop-blur-lg p-4 rounded-xl shadow-lg sticky top-20">
         <h3 className="text-l font-bold text-center mb-4">Order Summary</h3>
         <div className="flex justify-between"><span>Item:</span><span>{selected.name}</span></div>
         <div className="flex justify-between"><span>Price:</span><span>${selected.price.toFixed(2)}</span></div>
@@ -123,8 +131,15 @@ export default function CardCarouselWithSummary() {
         <div className="flex justify-between"><span>Tax:</span><span>${tax.toFixed(2)}</span></div>
         <hr className="my-2 border-gray-500" />
         <div className="flex justify-between font-bold"><span>Total:</span><span>${total.toFixed(2)}</span></div>
-        <input value={promo} onChange={e => setPromo(e.target.value)} placeholder="Promo code" className="w-full mt-4 px-3 py-2 bg-zinc-800 rounded" />
-        <button className="w-full mt-3 py-2 bg-orange-500 text-black rounded hover:bg-orange-600 font-semibold">Checkout</button>
+        <input
+          value={promo}
+          onChange={e => setPromo(e.target.value)}
+          placeholder="Promo code"
+          className="w-full mt-4 px-3 py-2 bg-zinc-800 rounded"
+        />
+        <button className="w-full mt-3 py-2 bg-orange-500 text-black rounded hover:bg-orange-600 font-semibold">
+          Checkout
+        </button>
       </aside>
     </main>
   );

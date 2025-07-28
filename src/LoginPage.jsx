@@ -3,8 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { motion } from "framer-motion";
-import { auth } from "./firebaseConfig";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { doSignIn } from "./firebaseConfig";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -14,20 +13,22 @@ export default function LoginPage() {
   const [showPwd,    setShowPwd]    = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Live validation
+  // Live field‐level validation
   useEffect(() => {
     const e = {};
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) {
-      e.email = "Invalid email";
+      e.email = "Invalid email format";
     }
     if (form.password && form.password.length < 6) {
-      e.password = "Min 6 characters";
+      e.password = "Password must be ≥ 6 characters";
     }
     setErrors(e);
   }, [form]);
 
   const handleChange = e => {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    // clear submit error
+    setErrors(f => ({ ...f, submit: undefined }));
   };
 
   const handleSubmit = async e => {
@@ -38,9 +39,9 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await doSignIn(form.email, form.password);
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     } catch (err) {
-      console.error(err);
+      console.error("Login error:", err);
       setErrors({ submit: "Invalid email or password." });
       setSubmitting(false);
     }
@@ -103,19 +104,19 @@ export default function LoginPage() {
         </div>
 
         {/* Submit-error summary */}
-        {submitted && Object.keys(errors).length > 0 && (
+        {submitted && errors.submit && (
           <motion.p
             initial={{ x: -10 }}
             animate={{ x: 0 }}
             className="text-red-400 text-center text-sm"
           >
-            {errors.submit || "Please fix the above fields"}
+            {errors.submit}
           </motion.p>
         )}
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || Object.keys(errors).length > 0}
           className={`w-full py-2 font-semibold rounded transition ${
             submitting
               ? "bg-zinc-700 text-gray-400 cursor-not-allowed"

@@ -2,11 +2,16 @@
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
-  setPersistence,
-  browserLocalPersistence
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut,
 } from "firebase/auth";
 import {
-  getFirestore
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -20,38 +25,37 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Auth + Firestore instances
 export const auth = getAuth(app);
 export const db   = getFirestore(app);
 
-// 1) Force local persistence
-setPersistence(auth, browserLocalPersistence).catch(err => {
-  console.error("❌ could not set persistence", err);
-});
+// — Helper functions —
 
-// Helper wrappers
 export function onAuthChange(cb) {
   return onAuthStateChanged(auth, cb);
 }
+
 export function doSignOut() {
   return signOut(auth);
 }
-export function doSignIn(email, pwd) {
-  return signInWithEmailAndPassword(auth, email, pwd);
+
+export function doSignIn(email, password) {
+  return signInWithEmailAndPassword(auth, email, password);
 }
-export async function doSignUp(email, pwd, profile) {
-  const { user } = await createUserWithEmailAndPassword(auth, email, pwd);
+
+export async function doSignUp(email, password, profile) {
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  const { user } = result;
   await setDoc(doc(db, "users", user.uid), {
-    uid:       user.uid,
-    email:     email,
-    fullName:  profile.fullName,
-    phone:     profile.phone || "",
+    uid:      user.uid,
+    email:    user.email,
+    fullName: profile.fullName,
+    phone:    profile.phone || "",
     createdAt: Date.now(),
   });
   return user;
 }
+
 export async function fetchUserProfile(uid) {
   const snap = await getDoc(doc(db, "users", uid));
   return snap.exists() ? snap.data() : null;
 }
-
